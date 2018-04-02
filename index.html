@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		
+		<title></title>
+		<style>
+			*{margin:0;padding:0;}
+			ul,li{list-style: none;}
+			html{font-size:20px;}
+			body{width:100%;height:100%;position: absolute;}
+			.trackBox{width:50%;height:100%;overflow: hidden;position:relative;left:25%;
+				display: -webkit-box;border-right:5px solid #ccc;border-left:5px solid #ccc;}
+			.track{width:100%;height:200%;-webkit-box-flex:1;box-flex:1;display: box;
+				display:-webkit-box;background: #efefef;position: absolute;top:-100%;left:0;}
+			.track li{-webkit-box-flex:1;border-right:5px dashed #fff;position: relative;}
+			.track li:nth-child(5){border:0;}
+			.car,.otherCar{position: absolute;left:2%;height:2rem;z-index:300;
+				border:2px solid #6B8E23;border-radius:20%;}
+			.car{bottom:2rem;background: #abcdef;width:15%;box-shadow:0 4px 4px 0 #333333;}
+			.otherCar{top:-2rem;background:#6B8E23;height:6rem;width:15%;box-shadow:0 -10px 10px 0 #333333;}
+			.left,.right{position: absolute;bottom:30px;width:15%;height:30px;
+				background:rgba(0,0,0,0.4);font-size: 20px;color:#fff;border:2px solid #efefef;
+				text-align: center;line-height: 30px;z-index:2000;}	
+			.left{left:5%;}
+			.right{right:5%;}
+			
+			.car span{width:30%;height:0.5rem;position:absolute;
+				top:10px;background: #333;border-radius: 40%;}
+			.leftLight{left:10%;transform:rotate(-30deg);}
+			.rightLight{right:10%;transform:rotate(30deg);}
+			.gameover{position: absolute;width:100%;height:100%;background:rgba(0,0,0,0.5);
+				z-index:5000;text-align:center;display:none;}
+			.gameover p{margin-top:40%;font-size:40px;font-weight: 900;color:#fff;}
+			.gameover div{margin-top:5%;}
+			.gameover button{width:120px;height:40px;border:0;background: #ccc;font-size:20px;
+					margin-top:5%;color:#fff;}
+			.point{position: absolute;top:5%;right:5%;z-index:500;}
+			@media screen and (max-width:375px){
+				html{font-size: 40px;}
+				.left{left:0;}
+				.right{right:0;}
+				.trackBox{width:100%;left:0;}
+				.otherCar{height:2rem;}
+				.left,.right{width:25%;height:40px;line-height: 40px;}
+			}
+			@media screen and (min-width:376px) and (max-width:768px){
+				html{font-size:30px;}
+				.car,.otherCar{height:3rem;}
+				.left,.right{width:25%;height:40px;line-height: 40px;}
+				.trackBox{width:100%;left:0;}
+			}
+			@media screen and (min-width:769px){
+				html{font-size:20px;}
+				.car,.otherCar{height:150px;}
+				.gameover p{margin-top:20%;}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="gameover" id="gameover">
+			<p>GAME&nbsp;&nbsp;OVER</p>
+			<div>分数:<span id="pointNum"></span>分</div>
+			<button id="result">重玩(R)</button>
+		</div>
+		<div class="left" id="left">向左</div>
+		<div class="trackBox" id="trackBox">
+			<div class="point" id="point"><span>0</span>分</div>
+			<ul class="track" id="track">
+				<li></li>
+				<li></li>
+				<li></li>
+				<li></li>
+				<li></li>
+			</ul>
+			<div class="car" id="car">
+				<span class="leftLight"></span>
+				<span class="rightLight"></span>
+			</div>
+		</div>
+		<div class="right" id="right">向右</div>
+		<script type="text/javascript" src="js/zepto.min.all.js" ></script>
+		<script>
+		
+		
+		$(function(){
+			var makeTimer=null,
+				judgeTimer=null;
+			$('body').bind("touchmove", function(e) {e.preventDefault();});
+			results()
+		})
+		//开始函数、重置函数
+		function results(){
+			$("#point span").html(0)
+			trackMove()
+			carMove()
+			toMakeCar()
+		}
+			
+				//跑道后退
+			function trackMove(){
+				var track=document.getElementById("track");
+				$(track).animate({"top":"1%"},5000,"linear",function(){
+					$(this).css("top","-100%")
+					
+					trackMove()	
+				})
+			}
+			//小车躲避
+			function carMove() {
+				
+				var left = document.getElementById("left"),
+					right = document.getElementById("right"),
+					car = document.getElementById("car"),
+					trackBox = document.getElementById("trackBox");
+				
+				if ($("html").css("font-size") == "20px") {
+					var i = 0;
+					var oldLeft = 2;
+					var per = 0;
+				
+					document.onkeydown = function(ev) {
+						var oEvent = ev || event
+						if (oEvent.keyCode == 37) {
+							i--
+							if (i < 0) {
+								i = 0
+							}
+							toLeft(i, oldLeft, per)
+						} else if (oEvent.keyCode == 39) {
+							i++
+							if (i > 4) {
+								i = 4
+							}
+							toRight(i, oldLeft, per)
+						}
+					}
+					
+					$(right).bind("click", function() {
+						i++
+						if (i > 4) {
+							i = 4
+						}
+						toRight(i, oldLeft, per)
+					})
+				
+					$(left).bind("click", function() {
+						i--
+						if (i < 0) {
+							i = 0
+						}
+						toLeft(i, oldLeft, per)
+					})
+				} else {
+					var i = 0;
+					var oldLeft = 2;
+					var per = 0;
+				
+					$(right).bind({"tap":function() {
+							i++
+							if (i > 4) {
+								i = 4
+							}
+							toRight(i, oldLeft, per)
+						},"swipeRight":function(){
+							i++
+							if (i > 4) {
+								i = 4
+							}
+							toRight(i, oldLeft, per)
+						}
+					})
+				
+					$(left).bind({"tap":function() {
+							i--
+							if (i < 0) {
+								i = 0
+							}
+							toLeft(i, oldLeft, per)
+						},"swipeLeft":function(){
+							i--
+							if (i < 0) {
+								i = 0
+							}
+							toLeft(i, oldLeft, per)
+						}
+					})
+					
+				
+				}
+			}
+			//向右
+				function toRight(i,oldLeft,per){
+					
+						console.log(i);
+						per=20*i
+						$("#car").animate({"left":oldLeft+per+"%","box-shadow":"-15px 4px 15px 0 #333333"},300,"",function(){
+							$("#car").animate({"box-shadow":"0 4px 4px 0 #333333"})
+						})
+				}
+			//向左
+				function toLeft(i,oldLeft,per){
+					
+					per=20*i
+					$("#car").animate({"left":oldLeft+per+"%","box-shadow":"15px 4px 15px 0 #333333"},300,"",function(){
+						$("#car").animate({"box-shadow":"0 4px 4px 0 #333333"})
+					})
+				}
+				
+				
+			//其他车子
+			function otherCar(pointNum){
+				var trackBox=document.getElementById("trackBox");
+				
+				var oldLeft=2;
+				
+				var span=document.createElement("span");
+				var num=Math.floor(Math.random()*5);
+				var per2=num*20
+				
+				trackBox.appendChild(span)
+				span.className="otherCar"
+				$(span).css("left",oldLeft+per2+"%")
+				
+				var speed=Math.ceil(Math.random()*5000)
+				if(speed<2000){
+					speed=2000
+				}
+				$(span).animate({"top":"100%"},speed,"",function(){
+					
+					$(this).remove()
+					
+						var point=parseInt($("#point span").html())+parseInt(1)
+						$("#point span").html(point)
+					
+				})
+				
+				ifCrash(span)
+			}
+			function toMakeCar(){
+				var pointNum=1;
+				makeTimer=setInterval(function(){
+					otherCar(pointNum)
+				},800)
+			}
+			//判断相撞
+			function ifCrash(that){
+				
+				var car=document.getElementById("car"),
+					carWidth=car.offsetWidth,
+					carHeight=car.offsetHeight,
+					othWidth=that.offsetWidth,
+					othHeight=that.offsetHeight;
+				
+				judgeTimer=setInterval(function(){
+					
+					var carLeft=car.offsetLeft,
+						carTop=car.offsetTop,
+						othLeft=that.offsetLeft,
+						othTop=that.offsetTop;
+						
+					if(Math.abs(othLeft-carLeft)<5&&Math.abs(othTop-carTop)<othHeight){
+						
+						stop()
+					}else if(Math.abs(othLeft-carLeft)<carWidth&&Math.abs(othTop-carTop)<othHeight)
+					{
+						stop()
+					}
+					
+				},30)
+			}
+			//停止函数
+			function stop(){
+				var gameover=document.getElementById("gameover"),
+					result=document.getElementById("result");
+				var lastPoint=$("#point span").html()
+				gameover.style.display="block";
+				
+				$("#gameover div span").html(lastPoint)
+				$("#point span").html(lastPoint)
+				$(".otherCar").animate({"top":"0"},400,"",function(){
+					$(this).remove()
+				})
+				$("#car").animate({"bottom":"-10rem"},1000)
+				clearInterval(makeTimer)
+				clearInterval(judgeTimer)
+				
+				//判断屏幕大小来做不同点击事件
+				if ($("html").css("font-size")=="20px") {
+					shake()
+					document.onkeydown = function(ev) {
+						var oEvent = ev || event
+						if (oEvent.keyCode == 82) {
+							gameover.style.display="none";
+							$("#car").css("left","2%").animate({"bottom":"2rem"},300,"",function(){
+								window.location.reload();
+							})
+						}}
+					result.onclick=function(){
+						gameover.style.display="none";
+						$("#car").css("left","2%").animate({"bottom":"2rem"},300,"",function(){
+							window.location.reload();
+						})
+					}
+				}else{
+					$(result).tap(function(){
+						gameover.style.display="none";
+						$("#car").css("left","2%").animate({"bottom":"2rem"},300,"",function(){
+							window.location.reload();
+						})
+						
+					})
+				}
+				
+			}
+		//跑道震动
+		function shake(){
+				
+				$("#trackBox").animate({"left":"15%"},100,"",function(){
+					$(this).animate({"left":"40%"},100,"",function(){
+						$(this).animate({"left":"20%"},150,"",function(){
+							$(this).animate({"left":"30%"},150,"",function(){
+								$(this).animate({"left":"23%"},100,"",function(){
+									$(this).animate({"left":"27%"},100,"",function(){
+										$(this).animate({"left":"25%"},100)
+									})
+								})
+							})
+						})
+					})
+				})	
+			}
+			
+	</script>
+	</body>
+</html>
